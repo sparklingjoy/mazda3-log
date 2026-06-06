@@ -4,66 +4,184 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Mazda 3 整備記録">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mazda 3">
 <title>Mazda 3 整備記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:16px;background:#f5f5f7;color:#1c1c1e;-webkit-text-size-adjust:100%}
-header{background:#fff;border-bottom:0.5px solid #d1d1d6;padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between}
-header h1{font-size:18px;font-weight:600}
-.tab-bar{display:flex;background:#fff;border-bottom:0.5px solid #d1d1d6;position:sticky;top:49px;z-index:9}
-.tab{flex:1;padding:10px 4px;font-size:13px;text-align:center;border:none;background:none;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
-.tab.active{color:#007aff;border-bottom-color:#007aff;font-weight:500}
-.content{padding:16px;max-width:600px;margin:0 auto;padding-bottom:40px}
+:root{
+  --bg:#f7f6f3;
+  --bg2:#ffffff;
+  --bg3:#f0ede8;
+  --border:#e8e4dd;
+  --border2:#d8d3cb;
+  --text:#2c2a27;
+  --text2:#7a7570;
+  --text3:#b0aba3;
+  --red:#c97b6b;
+  --orange:#c9956b;
+  --blue:#6b8fc9;
+  --green:#6baa8e;
+  --yellow:#c9a96b;
+  --accent:#c97b6b;
+  --radius:14px;
+  --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+
+/* Header */
+.header{
+  padding:52px 20px 16px;
+  background:linear-gradient(180deg,rgba(247,246,243,1) 0%,rgba(247,246,243,0.96) 100%);
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.car-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);font-weight:500;margin-bottom:4px}
+.header h1{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.rec-badge{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text2)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--bg3);border-radius:12px;padding:4px}
+.tab-btn{flex:1;padding:8px 4px;font-size:13px;font-weight:500;border:none;background:none;color:var(--text3);border-radius:8px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.tab-btn.active{background:var(--bg);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.4)}
+
+/* Content */
+.content{padding:20px;padding-bottom:48px;max-width:600px;margin:0 auto}
 .view{display:none}.view.active{display:block}
-.form-card{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:16px}
-.form-row{padding:12px 16px;border-bottom:0.5px solid #f2f2f7;display:flex;align-items:center;gap:12px}
-.form-row:last-child{border-bottom:none}
-.form-row label{font-size:14px;color:#3c3c43;min-width:80px;flex-shrink:0}
-.form-row input,.form-row select,.form-row textarea{flex:1;border:none;outline:none;font-size:15px;color:#1c1c1e;background:transparent;font-family:inherit;text-align:right}
-.form-row textarea{text-align:left;resize:none;min-height:80px}
-.save-btn{width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;margin-bottom:16px}
-.save-btn:active{opacity:.8}
-.msg{text-align:center;font-size:13px;color:#34c759;min-height:20px;margin-bottom:8px}
-.filter-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+
+/* Filter chips */
+.filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:20px;scrollbar-width:none}
 .filter-scroll::-webkit-scrollbar{display:none}
-.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:0.5px solid #d1d1d6;background:#fff;color:#1c1c1e;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.chip.on{background:#007aff;color:#fff;border-color:#007aff}
-.rec-card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px}
-.rec-head{display:flex;justify-content:space-between;align-items:flex-start}
-.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:6px}
-.tag-oil{background:#fff3cd;color:#856404}
-.tag-parts{background:#d1ecf1;color:#0c5460}
-.tag-repair{background:#f8d7da;color:#721c24}
-.tag-other{background:#e2e3e5;color:#383d41}
-.rec-title{font-size:15px;font-weight:500;margin-bottom:3px}
-.rec-meta{font-size:12px;color:#8e8e93}
-.rec-note{font-size:13px;color:#3c3c43;margin-top:8px;white-space:pre-wrap;line-height:1.5}
-.del-btn{background:none;border:none;color:#ff3b30;font-size:13px;padding:4px 0 4px 12px;cursor:pointer;white-space:nowrap}
-.empty{text-align:center;color:#8e8e93;padding:48px 0;font-size:15px}
-.export-row{display:flex;gap:10px;margin-top:12px}
-.export-btn{flex:1;padding:12px;background:#fff;border:0.5px solid #d1d1d6;border-radius:12px;font-size:14px;color:#007aff;cursor:pointer}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.stat-box{background:#fff;border-radius:12px;padding:16px;text-align:center}
-.stat-num{font-size:28px;font-weight:600}
-.stat-lbl{font-size:12px;color:#8e8e93;margin-top:4px}
+.chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;font-family:'DM Sans',sans-serif}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Record cards */
+.rec-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-bottom:10px;
+  transition:border-color .15s;
+  position:relative;
+  overflow:hidden;
+}
+.rec-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:3px 0 0 3px;
+}
+.rec-card.oil::before{background:var(--yellow)}
+.rec-card.parts::before{background:var(--blue)}
+.rec-card.repair::before{background:var(--red)}
+.rec-card.other::before{background:var(--text3)}
+.rec-inner{padding-left:12px}
+.rec-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.tag{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.tag-oil{background:rgba(201,169,107,.12);color:#8a6830}
+.tag-parts{background:rgba(107,143,201,.12);color:#3a5888}
+.tag-repair{background:rgba(201,123,107,.12);color:#8a4030}
+.tag-other{background:rgba(176,171,163,.18);color:var(--text2)}
+.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 12px;transition:color .15s}
+.del-btn:active{color:var(--red)}
+.rec-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:5px;letter-spacing:-.01em}
+.rec-meta{display:flex;gap:10px;flex-wrap:wrap}
+.meta-item{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);display:flex;align-items:center;gap:4px}
+.meta-dot{color:var(--border2)}
+.rec-note{font-size:13px;color:var(--text2);margin-top:10px;line-height:1.6;white-space:pre-wrap;padding-top:10px;border-top:1px solid var(--border)}
+
+/* Empty */
+.empty{text-align:center;padding:64px 0;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:16px;opacity:.5}
+.empty-text{font-size:15px;margin-bottom:6px;color:var(--text2)}
+.empty-sub{font-size:13px}
+
+/* Section label */
+.section-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:24px}
+
+/* Action buttons */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.action-btn{padding:13px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif}
+.action-btn:active{background:var(--bg3);border-color:var(--border2)}
+.action-btn.accent{color:#6baa8e;border-color:rgba(107,170,142,.3);background:rgba(107,170,142,.08)}
+.action-btn.full{grid-column:1/-1}
+
+/* Form */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.form-row{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.form-row:last-child{border-bottom:none}
+.form-row label{font-size:13px;font-weight:500;color:var(--text2);min-width:76px;flex-shrink:0}
+.form-row input,.form-row select,.form-row textarea{
+  flex:1;border:none;outline:none;font-size:15px;color:var(--text);
+  background:transparent;font-family:'DM Sans',sans-serif;text-align:right;
+}
+.form-row textarea{text-align:left;resize:none;min-height:80px;color:var(--text)}
+.form-row select option{background:var(--bg2);color:var(--text)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
+.submit-btn{
+  width:100%;padding:16px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius);
+  font-size:16px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  letter-spacing:-.01em;
+  transition:opacity .15s;
+  margin-bottom:16px;
+}
+.submit-btn:active{opacity:.85}
+.form-msg{text-align:center;font-size:13px;color:#6baa8e;min-height:20px;margin-bottom:10px;font-family:'DM Mono',monospace}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px}
+.stat-num{font-size:30px;font-weight:600;letter-spacing:-.03em;font-family:'DM Mono',monospace}
+.stat-lbl{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-top:4px}
 .stat-wide{grid-column:1/-1}
-.danger-btn{width:100%;padding:12px;background:#fff;border:0.5px solid #ff3b30;border-radius:12px;font-size:14px;color:#ff3b30;cursor:pointer;margin-top:10px}
+.stat-accent-red .stat-num{color:#c97b6b}
+.stat-accent-blue .stat-num{color:#6b8fc9}
+.stat-accent-yellow .stat-num{color:#c9a96b}
+.stat-accent-green .stat-num{color:#6baa8e}
+.danger-btn{width:100%;padding:14px;background:rgba(201,123,107,.07);border:1px solid rgba(201,123,107,.2);border-radius:var(--radius);font-size:14px;font-weight:500;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:16px;transition:all .15s}
+.danger-btn:active{background:rgba(232,85,62,.15)}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(44,42,39,.35);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:28px 20px 48px;width:100%;max-width:600px}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 24px}
+.modal h3{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.modal-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px;font-family:'DM Sans',sans-serif;transition:opacity .15s}
+.modal-btn:active{opacity:.8}
+.modal-btn.primary{background:var(--accent);color:#fff}
+.modal-btn.warning{background:rgba(245,166,35,.15);color:var(--orange);border:1px solid rgba(245,166,35,.3)}
+.modal-btn.cancel{background:var(--bg3);color:var(--text2)}
 </style>
 </head>
 <body>
-<header>
-  <h1>🚗 Mazda 3 整備記録</h1>
-  <span id="rec-count" style="font-size:13px;color:#8e8e93"></span>
-</header>
-<div class="tab-bar">
-  <button class="tab active" onclick="showTab('list')" id="tab-list">記録</button>
-  <button class="tab" onclick="showTab('add')" id="tab-add">＋ 追加</button>
-  <button class="tab" onclick="showTab('stats')" id="tab-stats">統計</button>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="car-label">Maintenance Log</div>
+      <h1>Mazda 3</h1>
+    </div>
+    <span class="rec-badge" id="rec-count">0 件</span>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('list')" id="tab-list">記録</button>
+    <button class="tab-btn" onclick="showTab('add')" id="tab-add">＋ 追加</button>
+    <button class="tab-btn" onclick="showTab('stats')" id="tab-stats">統計</button>
+  </div>
 </div>
+
 <div class="content">
 
+  <!-- 記録一覧 -->
   <div class="view active" id="view-list">
     <div class="filter-scroll">
       <button class="chip on" onclick="setFilter('all',this)">すべて</button>
@@ -73,15 +191,23 @@ header h1{font-size:18px;font-weight:600}
       <button class="chip" onclick="setFilter('other',this)">その他</button>
     </div>
     <div id="record-list"></div>
-    <div class="export-row">
-      <button class="export-btn" onclick="exportCSV()">📥 CSVで書き出し</button>
-      <button class="export-btn" onclick="exportTxt()">📄 テキスト書き出し</button>
+    <div class="section-label">書き出し</div>
+    <div class="action-grid">
+      <button class="action-btn" onclick="exportCSV()">📥 CSV</button>
+      <button class="action-btn" onclick="exportTxt()">📄 テキスト</button>
     </div>
+    <div class="section-label">バックアップから復元</div>
+    <div class="action-grid">
+      <button class="action-btn accent full" onclick="document.getElementById('csv-input').click()">📂 CSVを読み込む</button>
+    </div>
+    <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="onCSVSelected(event)">
   </div>
 
+  <!-- 追加フォーム -->
   <div class="view" id="view-add">
     <div class="form-card">
-      <div class="form-row"><label>種別</label>
+      <div class="form-row">
+        <label>種別</label>
         <select id="f-type">
           <option value="oil">オイル交換</option>
           <option value="parts">部品交換</option>
@@ -92,23 +218,39 @@ header h1{font-size:18px;font-weight:600}
       <div class="form-row"><label>日付</label><input type="date" id="f-date"></div>
       <div class="form-row"><label>走行距離</label><input type="number" id="f-km" placeholder="km" min="0" inputmode="numeric"></div>
       <div class="form-row"><label>内容</label><input type="text" id="f-title" placeholder="例: エンジンオイル交換"></div>
-      <div class="form-row" style="align-items:flex-start"><label style="padding-top:2px">メモ</label><textarea id="f-note" placeholder="使用オイル、部品名、費用など"></textarea></div>
+      <div class="form-row" style="align-items:flex-start">
+        <label style="padding-top:3px">メモ</label>
+        <textarea id="f-note" placeholder="使用オイル、部品名、費用など"></textarea>
+      </div>
       <div class="form-row"><label>費用</label><input type="number" id="f-cost" placeholder="円" min="0" inputmode="numeric"></div>
     </div>
-    <p class="msg" id="f-msg"></p>
-    <button class="save-btn" onclick="addRecord()">保存する</button>
+    <p class="form-msg" id="f-msg"></p>
+    <button class="submit-btn" onclick="addRecord()">保存する</button>
   </div>
 
+  <!-- 統計 -->
   <div class="view" id="view-stats">
     <div class="stat-grid">
-      <div class="stat-box"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">総記録件数</div></div>
-      <div class="stat-box"><div class="stat-num" id="s-oil">0</div><div class="stat-lbl">オイル交換</div></div>
-      <div class="stat-box"><div class="stat-num" id="s-parts">0</div><div class="stat-lbl">部品交換</div></div>
+      <div class="stat-box stat-accent-red"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">総件数</div></div>
+      <div class="stat-box stat-accent-green"><div class="stat-num" id="s-cost">¥0</div><div class="stat-lbl">累計費用</div></div>
+      <div class="stat-box stat-accent-yellow"><div class="stat-num" id="s-oil">0</div><div class="stat-lbl">オイル交換</div></div>
+      <div class="stat-box stat-accent-blue"><div class="stat-num" id="s-parts">0</div><div class="stat-lbl">部品交換</div></div>
       <div class="stat-box"><div class="stat-num" id="s-repair">0</div><div class="stat-lbl">修理</div></div>
-      <div class="stat-box stat-wide"><div class="stat-num" id="s-cost">¥0</div><div class="stat-lbl">累計整備費用</div></div>
       <div class="stat-box stat-wide"><div class="stat-num" id="s-km">—</div><div class="stat-lbl">最終記録走行距離</div></div>
     </div>
-    <button class="danger-btn" onclick="clearAll()">🗑 全データを削除</button>
+    <button class="danger-btn" onclick="clearAll()">全データを削除</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>CSVを読み込む</h3>
+    <p id="modal-msg"></p>
+    <button class="modal-btn primary" onclick="importCSV('append')">既存の記録に追記する</button>
+    <button class="modal-btn warning" onclick="importCSV('overwrite')">既存の記録を上書きする</button>
+    <button class="modal-btn cancel" onclick="closeModal()">キャンセル</button>
   </div>
 </div>
 
@@ -116,8 +258,8 @@ header h1{font-size:18px;font-weight:600}
 const KEY='mazda3_log_v1';
 const TAG_LABEL={oil:'オイル交換',parts:'部品交換',repair:'修理',other:'その他'};
 const TAG_CLASS={oil:'tag-oil',parts:'tag-parts',repair:'tag-repair',other:'tag-other'};
-let filter='all';
-let records=[];
+const TYPE_MAP={'オイル交換':'oil','部品交換':'parts','修理':'repair','その他':'other'};
+let filter='all', records=[], pendingCSV=[];
 
 function load(){try{const d=localStorage.getItem(KEY);if(d)records=JSON.parse(d);}catch(e){records=[];}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(records));}catch(e){alert('保存に失敗しました');}}
@@ -126,36 +268,47 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function renderList(){
   const el=document.getElementById('record-list');
   const list=(filter==='all'?records:records.filter(r=>r.type===filter)).slice().reverse();
-  document.getElementById('rec-count').textContent=records.length+'件';
+  document.getElementById('rec-count').textContent=records.length+' 件';
   if(!list.length){
-    el.innerHTML='<div class="empty">📋<br><br>まだ記録がありません<br><small style="display:block;margin-top:8px;color:#aeaeb2">「＋追加」から記録してください</small></div>';
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">記録がありません</div><div class="empty-sub">「＋追加」から記録してください</div></div>`;
     return;
   }
   el.innerHTML=list.map(r=>{
     const idx=records.indexOf(r);
-    return`<div class="rec-card"><div class="rec-head"><div style="flex:1;min-width:0">
-      <span class="tag ${TAG_CLASS[r.type]||'tag-other'}">${TAG_LABEL[r.type]||r.type}</span>
-      <div class="rec-title">${esc(r.title||'（タイトルなし）')}</div>
-      <div class="rec-meta">${r.date||'日付不明'}${r.km?' · '+Number(r.km).toLocaleString()+' km':''}${r.cost?' · ¥'+Number(r.cost).toLocaleString():''}</div>
-      ${r.note?`<div class="rec-note">${esc(r.note)}</div>`:''}
-    </div><button class="del-btn" onclick="del(${idx})">削除</button></div></div>`;
+    const metaParts=[
+      r.date?`<span class="meta-item">${r.date}</span>`:'',
+      r.km?`<span class="meta-dot">·</span><span class="meta-item">${Number(r.km).toLocaleString()} km</span>`:'',
+      r.cost?`<span class="meta-dot">·</span><span class="meta-item">¥${Number(r.cost).toLocaleString()}</span>`:''
+    ].join('');
+    return`<div class="rec-card ${r.type||'other'}">
+      <div class="rec-inner">
+        <div class="rec-top">
+          <span class="tag ${TAG_CLASS[r.type]||'tag-other'}">${TAG_LABEL[r.type]||r.type}</span>
+          <button class="del-btn" onclick="del(${idx})">×</button>
+        </div>
+        <div class="rec-title">${esc(r.title||'（タイトルなし）')}</div>
+        <div class="rec-meta">${metaParts}</div>
+        ${r.note?`<div class="rec-note">${esc(r.note)}</div>`:''}
+      </div>
+    </div>`;
   }).join('');
 }
 
 function renderStats(){
   const cost=records.reduce((s,r)=>s+(Number(r.cost)||0),0);
   const kms=records.filter(r=>r.km).map(r=>Number(r.km));
+  const fmt=n=>n>=10000?'¥'+(n/10000).toFixed(1)+'万':'¥'+n.toLocaleString();
   document.getElementById('s-total').textContent=records.length;
   document.getElementById('s-oil').textContent=records.filter(r=>r.type==='oil').length;
   document.getElementById('s-parts').textContent=records.filter(r=>r.type==='parts').length;
   document.getElementById('s-repair').textContent=records.filter(r=>r.type==='repair').length;
-  document.getElementById('s-cost').textContent='¥'+cost.toLocaleString();
+  document.getElementById('s-cost').textContent=fmt(cost);
   document.getElementById('s-km').textContent=kms.length?Math.max(...kms).toLocaleString()+' km':'—';
 }
 
 function showTab(t){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+t).classList.add('active');
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='list')renderList();
@@ -175,8 +328,7 @@ function addRecord(){
     type:document.getElementById('f-type').value,
     date:document.getElementById('f-date').value,
     km:document.getElementById('f-km').value?Number(document.getElementById('f-km').value):null,
-    title,
-    note:document.getElementById('f-note').value.trim(),
+    title,note:document.getElementById('f-note').value.trim(),
     cost:document.getElementById('f-cost').value?Number(document.getElementById('f-cost').value):null,
     ts:Date.now()
   });
@@ -186,33 +338,55 @@ function addRecord(){
   setTimeout(()=>document.getElementById('f-msg').textContent='',2000);
 }
 
-function del(idx){
-  if(!confirm('この記録を削除しますか？'))return;
-  records.splice(idx,1);save();renderList();
-}
-
-function clearAll(){
-  if(!confirm('全データを削除しますか？'))return;
-  records=[];save();renderList();renderStats();
-}
+function del(idx){if(!confirm('この記録を削除しますか？'))return;records.splice(idx,1);save();renderList();}
+function clearAll(){if(!confirm('全データを削除しますか？'))return;records=[];save();renderList();renderStats();}
 
 function exportCSV(){
-  const bom='\uFEFF';
-  const header='種別,日付,走行距離(km),内容,メモ,費用(円)\n';
+  const bom='\uFEFF',header='種別,日付,走行距離(km),内容,メモ,費用(円)\n';
   const rows=records.map(r=>[TAG_LABEL[r.type]||r.type,r.date||'',r.km||'',r.title||'',r.note||'',r.cost||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   dl(bom+header+rows,'整備記録.csv','text/csv;charset=utf-8');
 }
-
 function exportTxt(){
   const txt=records.map(r=>`[${TAG_LABEL[r.type]}] ${r.date||'日付不明'} / ${r.km?r.km.toLocaleString()+' km':'距離不明'}\n${r.title||''}${r.note?'\n'+r.note:''}${r.cost?'\n費用: ¥'+Number(r.cost).toLocaleString():''}`).join('\n\n---\n\n');
   dl(txt,'整備記録.txt','text/plain;charset=utf-8');
 }
+function dl(c,f,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=f;a.click();}
 
-function dl(content,filename,type){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([content],{type}));
-  a.download=filename;a.click();
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  return lines.slice(1).map(line=>{
+    const cols=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur);cur='';}else cur+=c;
+    }
+    cols.push(cur);
+    const[typeRaw,date,km,title,note,cost]=cols.map(s=>s.trim());
+    return{type:TYPE_MAP[typeRaw]||'other',date:date||'',km:km?Number(km):null,title:title||'',note:note||'',cost:cost?Number(cost):null,ts:Date.now()};
+  }).filter(r=>r.title);
 }
+function onCSVSelected(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    pendingCSV=parseCSV(ev.target.result);
+    if(!pendingCSV.length){alert('読み込めるデータがありませんでした');return;}
+    document.getElementById('modal-msg').textContent=`${pendingCSV.length}件を読み込みました。現在${records.length}件の記録があります。`;
+    document.getElementById('modal-bg').classList.add('open');
+  };
+  reader.readAsText(file,'UTF-8');
+  e.target.value='';
+}
+function importCSV(mode){
+  records=mode==='overwrite'?pendingCSV:[...records,...pendingCSV];
+  save();closeModal();renderList();
+  alert(`✓ ${pendingCSV.length}件を${mode==='overwrite'?'上書き':'追記'}しました`);
+  pendingCSV=[];
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
 
 load();
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
