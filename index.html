@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mazda 3 整備記録">
+<title>Mazda 3 整備記録</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:16px;background:#f5f5f7;color:#1c1c1e;-webkit-text-size-adjust:100%}
+header{background:#fff;border-bottom:0.5px solid #d1d1d6;padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;font-weight:600}
+.tab-bar{display:flex;background:#fff;border-bottom:0.5px solid #d1d1d6;position:sticky;top:49px;z-index:9}
+.tab{flex:1;padding:10px 4px;font-size:13px;text-align:center;border:none;background:none;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#007aff;border-bottom-color:#007aff;font-weight:500}
+.content{padding:16px;max-width:600px;margin:0 auto;padding-bottom:40px}
+.view{display:none}.view.active{display:block}
+.form-card{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.form-row{padding:12px 16px;border-bottom:0.5px solid #f2f2f7;display:flex;align-items:center;gap:12px}
+.form-row:last-child{border-bottom:none}
+.form-row label{font-size:14px;color:#3c3c43;min-width:80px;flex-shrink:0}
+.form-row input,.form-row select,.form-row textarea{flex:1;border:none;outline:none;font-size:15px;color:#1c1c1e;background:transparent;font-family:inherit;text-align:right}
+.form-row textarea{text-align:left;resize:none;min-height:80px}
+.save-btn{width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;margin-bottom:16px}
+.save-btn:active{opacity:.8}
+.msg{text-align:center;font-size:13px;color:#34c759;min-height:20px;margin-bottom:8px}
+.filter-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filter-scroll::-webkit-scrollbar{display:none}
+.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:0.5px solid #d1d1d6;background:#fff;color:#1c1c1e;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chip.on{background:#007aff;color:#fff;border-color:#007aff}
+.rec-card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.rec-head{display:flex;justify-content:space-between;align-items:flex-start}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:6px}
+.tag-oil{background:#fff3cd;color:#856404}
+.tag-parts{background:#d1ecf1;color:#0c5460}
+.tag-repair{background:#f8d7da;color:#721c24}
+.tag-other{background:#e2e3e5;color:#383d41}
+.rec-title{font-size:15px;font-weight:500;margin-bottom:3px}
+.rec-meta{font-size:12px;color:#8e8e93}
+.rec-note{font-size:13px;color:#3c3c43;margin-top:8px;white-space:pre-wrap;line-height:1.5}
+.del-btn{background:none;border:none;color:#ff3b30;font-size:13px;padding:4px 0 4px 12px;cursor:pointer;white-space:nowrap}
+.empty{text-align:center;color:#8e8e93;padding:48px 0;font-size:15px}
+.export-row{display:flex;gap:10px;margin-top:12px}
+.export-btn{flex:1;padding:12px;background:#fff;border:0.5px solid #d1d1d6;border-radius:12px;font-size:14px;color:#007aff;cursor:pointer}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stat-box{background:#fff;border-radius:12px;padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:600}
+.stat-lbl{font-size:12px;color:#8e8e93;margin-top:4px}
+.stat-wide{grid-column:1/-1}
+.danger-btn{width:100%;padding:12px;background:#fff;border:0.5px solid #ff3b30;border-radius:12px;font-size:14px;color:#ff3b30;cursor:pointer;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🚗 Mazda 3 整備記録</h1>
+  <span id="rec-count" style="font-size:13px;color:#8e8e93"></span>
+</header>
+<div class="tab-bar">
+  <button class="tab active" onclick="showTab('list')" id="tab-list">記録</button>
+  <button class="tab" onclick="showTab('add')" id="tab-add">＋ 追加</button>
+  <button class="tab" onclick="showTab('stats')" id="tab-stats">統計</button>
+</div>
+<div class="content">
+
+  <div class="view active" id="view-list">
+    <div class="filter-scroll">
+      <button class="chip on" onclick="setFilter('all',this)">すべて</button>
+      <button class="chip" onclick="setFilter('oil',this)">オイル交換</button>
+      <button class="chip" onclick="setFilter('parts',this)">部品交換</button>
+      <button class="chip" onclick="setFilter('repair',this)">修理</button>
+      <button class="chip" onclick="setFilter('other',this)">その他</button>
+    </div>
+    <div id="record-list"></div>
+    <div class="export-row">
+      <button class="export-btn" onclick="exportCSV()">📥 CSVで書き出し</button>
+      <button class="export-btn" onclick="exportTxt()">📄 テキスト書き出し</button>
+    </div>
+  </div>
+
+  <div class="view" id="view-add">
+    <div class="form-card">
+      <div class="form-row"><label>種別</label>
+        <select id="f-type">
+          <option value="oil">オイル交換</option>
+          <option value="parts">部品交換</option>
+          <option value="repair">修理</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-row"><label>日付</label><input type="date" id="f-date"></div>
+      <div class="form-row"><label>走行距離</label><input type="number" id="f-km" placeholder="km" min="0" inputmode="numeric"></div>
+      <div class="form-row"><label>内容</label><input type="text" id="f-title" placeholder="例: エンジンオイル交換"></div>
+      <div class="form-row" style="align-items:flex-start"><label style="padding-top:2px">メモ</label><textarea id="f-note" placeholder="使用オイル、部品名、費用など"></textarea></div>
+      <div class="form-row"><label>費用</label><input type="number" id="f-cost" placeholder="円" min="0" inputmode="numeric"></div>
+    </div>
+    <p class="msg" id="f-msg"></p>
+    <button class="save-btn" onclick="addRecord()">保存する</button>
+  </div>
+
+  <div class="view" id="view-stats">
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">総記録件数</div></div>
+      <div class="stat-box"><div class="stat-num" id="s-oil">0</div><div class="stat-lbl">オイル交換</div></div>
+      <div class="stat-box"><div class="stat-num" id="s-parts">0</div><div class="stat-lbl">部品交換</div></div>
+      <div class="stat-box"><div class="stat-num" id="s-repair">0</div><div class="stat-lbl">修理</div></div>
+      <div class="stat-box stat-wide"><div class="stat-num" id="s-cost">¥0</div><div class="stat-lbl">累計整備費用</div></div>
+      <div class="stat-box stat-wide"><div class="stat-num" id="s-km">—</div><div class="stat-lbl">最終記録走行距離</div></div>
+    </div>
+    <button class="danger-btn" onclick="clearAll()">🗑 全データを削除</button>
+  </div>
+</div>
+
+<script>
+const KEY='mazda3_log_v1';
+const TAG_LABEL={oil:'オイル交換',parts:'部品交換',repair:'修理',other:'その他'};
+const TAG_CLASS={oil:'tag-oil',parts:'tag-parts',repair:'tag-repair',other:'tag-other'};
+let filter='all';
+let records=[];
+
+function load(){try{const d=localStorage.getItem(KEY);if(d)records=JSON.parse(d);}catch(e){records=[];}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(records));}catch(e){alert('保存に失敗しました');}}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderList(){
+  const el=document.getElementById('record-list');
+  const list=(filter==='all'?records:records.filter(r=>r.type===filter)).slice().reverse();
+  document.getElementById('rec-count').textContent=records.length+'件';
+  if(!list.length){
+    el.innerHTML='<div class="empty">📋<br><br>まだ記録がありません<br><small style="display:block;margin-top:8px;color:#aeaeb2">「＋追加」から記録してください</small></div>';
+    return;
+  }
+  el.innerHTML=list.map(r=>{
+    const idx=records.indexOf(r);
+    return`<div class="rec-card"><div class="rec-head"><div style="flex:1;min-width:0">
+      <span class="tag ${TAG_CLASS[r.type]||'tag-other'}">${TAG_LABEL[r.type]||r.type}</span>
+      <div class="rec-title">${esc(r.title||'（タイトルなし）')}</div>
+      <div class="rec-meta">${r.date||'日付不明'}${r.km?' · '+Number(r.km).toLocaleString()+' km':''}${r.cost?' · ¥'+Number(r.cost).toLocaleString():''}</div>
+      ${r.note?`<div class="rec-note">${esc(r.note)}</div>`:''}
+    </div><button class="del-btn" onclick="del(${idx})">削除</button></div></div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const cost=records.reduce((s,r)=>s+(Number(r.cost)||0),0);
+  const kms=records.filter(r=>r.km).map(r=>Number(r.km));
+  document.getElementById('s-total').textContent=records.length;
+  document.getElementById('s-oil').textContent=records.filter(r=>r.type==='oil').length;
+  document.getElementById('s-parts').textContent=records.filter(r=>r.type==='parts').length;
+  document.getElementById('s-repair').textContent=records.filter(r=>r.type==='repair').length;
+  document.getElementById('s-cost').textContent='¥'+cost.toLocaleString();
+  document.getElementById('s-km').textContent=kms.length?Math.max(...kms).toLocaleString()+' km':'—';
+}
+
+function showTab(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='list')renderList();
+  if(t==='stats')renderStats();
+}
+
+function setFilter(f,btn){
+  filter=f;
+  document.querySelectorAll('.chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');renderList();
+}
+
+function addRecord(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){document.getElementById('f-msg').textContent='⚠ 内容を入力してください';return;}
+  records.push({
+    type:document.getElementById('f-type').value,
+    date:document.getElementById('f-date').value,
+    km:document.getElementById('f-km').value?Number(document.getElementById('f-km').value):null,
+    title,
+    note:document.getElementById('f-note').value.trim(),
+    cost:document.getElementById('f-cost').value?Number(document.getElementById('f-cost').value):null,
+    ts:Date.now()
+  });
+  save();
+  document.getElementById('f-msg').textContent='✓ 保存しました';
+  ['f-title','f-note','f-km','f-cost'].forEach(id=>document.getElementById(id).value='');
+  setTimeout(()=>document.getElementById('f-msg').textContent='',2000);
+}
+
+function del(idx){
+  if(!confirm('この記録を削除しますか？'))return;
+  records.splice(idx,1);save();renderList();
+}
+
+function clearAll(){
+  if(!confirm('全データを削除しますか？'))return;
+  records=[];save();renderList();renderStats();
+}
+
+function exportCSV(){
+  const bom='\uFEFF';
+  const header='種別,日付,走行距離(km),内容,メモ,費用(円)\n';
+  const rows=records.map(r=>[TAG_LABEL[r.type]||r.type,r.date||'',r.km||'',r.title||'',r.note||'',r.cost||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  dl(bom+header+rows,'整備記録.csv','text/csv;charset=utf-8');
+}
+
+function exportTxt(){
+  const txt=records.map(r=>`[${TAG_LABEL[r.type]}] ${r.date||'日付不明'} / ${r.km?r.km.toLocaleString()+' km':'距離不明'}\n${r.title||''}${r.note?'\n'+r.note:''}${r.cost?'\n費用: ¥'+Number(r.cost).toLocaleString():''}`).join('\n\n---\n\n');
+  dl(txt,'整備記録.txt','text/plain;charset=utf-8');
+}
+
+function dl(content,filename,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=filename;a.click();
+}
+
+load();
+document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+renderList();
+</script>
+</body>
+</html>
