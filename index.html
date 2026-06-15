@@ -198,9 +198,11 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
     </div>
     <div class="section-label">バックアップから復元</div>
     <div class="action-grid">
-      <button class="action-btn accent full" onclick="document.getElementById('csv-input').click()">📂 CSVを読み込む</button>
+      <div class="action-btn accent full" style="position:relative;overflow:hidden;padding:0">
+        <span style="display:block;padding:13px;pointer-events:none">📂 CSVを読み込む</span>
+        <input type="file" accept=".csv,text/csv,text/plain" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="onCSVSelected(event)">
+      </div>
     </div>
-    <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="onCSVSelected(event)">
   </div>
 
   <!-- 追加フォーム -->
@@ -350,7 +352,15 @@ function exportTxt(){
   const txt=records.map(r=>`[${TAG_LABEL[r.type]}] ${r.date||'日付不明'} / ${r.km?r.km.toLocaleString()+' km':'距離不明'}\n${r.title||''}${r.note?'\n'+r.note:''}${r.cost?'\n費用: ¥'+Number(r.cost).toLocaleString():''}`).join('\n\n---\n\n');
   dl(txt,'整備記録.txt','text/plain;charset=utf-8');
 }
-function dl(c,f,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=f;a.click();}
+function dl(c,f,t){
+  const blob=new Blob([c],{type:t});
+  const file=new File([blob],f,{type:t});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:f}).catch(e=>{if(e.name!=='AbortError')console.error(e);});
+    return;
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=f;a.click();
+}
 
 function parseCSV(text){
   text=text.replace(/^\uFEFF/,'');
