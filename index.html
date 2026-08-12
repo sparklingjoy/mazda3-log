@@ -269,7 +269,11 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 function renderList(){
   const el=document.getElementById('record-list');
-  const list=(filter==='all'?records:records.filter(r=>r.type===filter)).slice().reverse();
+  const list=(filter==='all'?records:records.filter(r=>r.type===filter)).slice().sort((a,b)=>{
+    const da=a.date||'',db=b.date||'';
+    if(da!==db)return db.localeCompare(da);
+    return (b.ts||0)-(a.ts||0);
+  });
   document.getElementById('rec-count').textContent=records.length+' 件';
   if(!list.length){
     el.innerHTML=`<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">記録がありません</div><div class="empty-sub">「＋追加」から記録してください</div></div>`;
