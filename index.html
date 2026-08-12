@@ -203,6 +203,11 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
         <input type="file" accept=".csv,text/csv,text/plain" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="onCSVSelected(event)">
       </div>
     </div>
+    <div class="section-label">CSVファイルと自動同期</div>
+    <div class="action-grid">
+      <button class="action-btn full" id="sync-btn" onclick="handleSyncClick()">🔗 CSVファイルと連携</button>
+    </div>
+    <div class="empty-sub" id="sync-status" style="margin-top:6px;text-align:center"></div>
   </div>
 
   <!-- 追加フォーム -->
@@ -262,6 +267,8 @@ const TAG_LABEL={oil:'オイル交換',parts:'部品交換',repair:'修理',othe
 const TAG_CLASS={oil:'tag-oil',parts:'tag-parts',repair:'tag-repair',other:'tag-other'};
 const TYPE_MAP={'オイル交換':'oil','部品交換':'parts','修理':'repair','その他':'other'};
 let filter='all', records=[], pendingCSV=[];
+const FS_SUPPORTED='showSaveFilePicker' in window;
+let csvHandle=null;
 
 function load(){try{const d=localStorage.getItem(KEY);if(d)records=JSON.parse(d);}catch(e){records=[];}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(records));}catch(e){alert('保存に失敗しました');}}
@@ -347,10 +354,15 @@ function addRecord(){
 function del(idx){if(!confirm('この記録を削除しますか？'))return;records.splice(idx,1);save();renderList();}
 function clearAll(){if(!confirm('全データを削除しますか？'))return;records=[];save();renderList();renderStats();}
 
+function csvRow(vals){return vals.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',');}
+function recordSig(r){return[r.type,r.date||'',r.km||'',r.title||'',r.note||'',r.cost||''].join('\u0001');}
+function recordsToCSV(list){
+  const bom='\uFEFF',header='ID,種別,日付,走行距離(km),内容,メモ,費用(円)\n';
+  const rows=list.map(r=>csvRow([r.ts||'',TAG_LABEL[r.type]||r.type,r.date||'',r.km||'',r.title||'',r.note||'',r.cost||''])).join('\n');
+  return bom+header+rows;
+}
 function exportCSV(){
-  const bom='\uFEFF',header='種別,日付,走行距離(km),内容,メモ,費用(円)\n';
-  const rows=records.map(r=>[TAG_LABEL[r.type]||r.type,r.date||'',r.km||'',r.title||'',r.note||'',r.cost||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  dl(bom+header+rows,'整備記録.csv','text/csv;charset=utf-8');
+  dl(recordsToCSV(records),'整備記録.csv','text/csv;charset=utf-8');
 }
 function exportTxt(){
   const txt=records.map(r=>`[${TAG_LABEL[r.type]}] ${r.date||'日付不明'} / ${r.km?r.km.toLocaleString()+' km':'距離不明'}\n${r.title||''}${r.note?'\n'+r.note:''}${r.cost?'\n費用: ¥'+Number(r.cost).toLocaleString():''}`).join('\n\n---\n\n');
@@ -370,6 +382,7 @@ function parseCSV(text){
   text=text.replace(/^\uFEFF/,'');
   const lines=text.split(/\r?\n/).filter(l=>l.trim());
   if(lines.length<2)return[];
+  const hasId=/^"?ID"?,/i.test(lines[0]);
   return lines.slice(1).map(line=>{
     const cols=[];let cur='',inQ=false;
     for(let i=0;i<line.length;i++){
@@ -378,8 +391,11 @@ function parseCSV(text){
       else if(c===','&&!inQ){cols.push(cur);cur='';}else cur+=c;
     }
     cols.push(cur);
-    const[typeRaw,date,km,title,note,cost]=cols.map(s=>s.trim());
-    return{type:TYPE_MAP[typeRaw]||'other',date:date||'',km:km?Number(km):null,title:title||'',note:note||'',cost:cost?Number(cost):null,ts:Date.now()};
+    let vals=cols.map(s=>s.trim());
+    let id=null;
+    if(hasId){id=vals[0]?Number(vals[0]):null;vals=vals.slice(1);}
+    const[typeRaw,date,km,title,note,cost]=vals;
+    return{type:TYPE_MAP[typeRaw]||'other',date:date||'',km:km?Number(km):null,title:title||'',note:note||'',cost:cost?Number(cost):null,ts:id||Date.now()};
   }).filter(r=>r.title);
 }
 function onCSVSelected(e){
@@ -402,9 +418,137 @@ function importCSV(mode){
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
 
+/* --- CSVファイル自動同期（File System Access API） --- */
+const IDB_NAME='mazda3_fsdb',IDB_STORE='handles',IDB_KEY='csvFile';
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(IDB_NAME,1);
+    req.onupgradeneeded=()=>req.result.createObjectStore(IDB_STORE);
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+async function idbGet(key){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const req=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(key);
+    req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);
+  });
+}
+async function idbSet(key,val){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(val,key);
+    tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
+  });
+}
+
+async function linkCSVFile(){
+  try{
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'整備記録.csv',
+      types:[{description:'CSV',accept:{'text/csv':['.csv']}}]
+    });
+    csvHandle=handle;
+    await idbSet(IDB_KEY,handle);
+    const result=await syncCSVFile(true);
+    renderList();
+    updateSyncStatus('synced',result);
+  }catch(e){
+    if(e.name!=='AbortError')updateSyncStatus('error');
+  }
+}
+
+async function syncCSVFile(withPrompt){
+  if(!csvHandle)return null;
+  let perm=await csvHandle.queryPermission({mode:'readwrite'});
+  if(perm!=='granted'&&withPrompt)perm=await csvHandle.requestPermission({mode:'readwrite'});
+  if(perm!=='granted'){updateSyncStatus('need-permission');return null;}
+  try{
+    const file=await csvHandle.getFile();
+    const text=await file.text();
+    const fileRecords=text.trim()?parseCSV(text):[];
+
+    const mergedIds=new Set(fileRecords.map(r=>r.ts));
+    const mergedSigs=new Set(fileRecords.map(recordSig));
+    const localIds=new Set(records.map(r=>r.ts));
+    const localSigs=new Set(records.map(recordSig));
+    const fileFromCsv=fileRecords.filter(r=>!localIds.has(r.ts)&&!localSigs.has(recordSig(r))).length;
+
+    const merged=fileRecords.slice();
+    let localAdded=0;
+    records.forEach(r=>{
+      if(!mergedIds.has(r.ts)&&!mergedSigs.has(recordSig(r))){
+        merged.push(r);mergedIds.add(r.ts);mergedSigs.add(recordSig(r));localAdded++;
+      }
+    });
+
+    records=merged;
+    save();
+
+    if(localAdded>0||fileFromCsv>0){
+      const writable=await csvHandle.createWritable();
+      await writable.write(recordsToCSV(records));
+      await writable.close();
+    }
+    return{localAdded,fileFromCsv};
+  }catch(e){
+    console.error(e);updateSyncStatus('error');return null;
+  }
+}
+
+async function handleSyncClick(){
+  if(!FS_SUPPORTED){alert('このブラウザはファイル連携に対応していません（Chrome/Edgeなどをご利用ください）。従来のCSV書き出し/読み込みは利用できます。');return;}
+  if(!csvHandle){await linkCSVFile();return;}
+  const result=await syncCSVFile(true);
+  renderList();
+  updateSyncStatus(result?'synced':'need-permission',result);
+}
+
+function updateSyncStatus(state,result){
+  const btn=document.getElementById('sync-btn'),status=document.getElementById('sync-status');
+  if(!btn)return;
+  if(!FS_SUPPORTED){
+    btn.textContent='🔗 CSVファイルと連携（非対応ブラウザ）';
+    status.textContent='この端末では自動同期は使えません。従来のCSV書き出し/読み込みをご利用ください。';
+    return;
+  }
+  if(!csvHandle){
+    btn.textContent='🔗 CSVファイルと連携';
+    status.textContent='';
+    return;
+  }
+  btn.textContent='🔄 '+(csvHandle.name||'整備記録.csv')+' と再同期';
+  if(state==='synced'){
+    const added=result&&(result.localAdded||result.fileFromCsv);
+    status.textContent=added?`✓ 同期しました（ファイルへ追記 ${result.localAdded}件 / 取込 ${result.fileFromCsv}件）`:'✓ 同期済み';
+  }else if(state==='need-permission'){
+    status.textContent='⚠ タップして同期を許可してください';
+  }else if(state==='error'){
+    status.textContent='⚠ 同期エラーが発生しました';
+  }else{
+    status.textContent='';
+  }
+}
+
+async function initCSVSync(){
+  updateSyncStatus();
+  if(!FS_SUPPORTED)return;
+  try{
+    const handle=await idbGet(IDB_KEY);
+    if(!handle)return;
+    csvHandle=handle;
+    const result=await syncCSVFile(false);
+    renderList();
+    updateSyncStatus(result?'synced':'need-permission',result);
+  }catch(e){console.error(e);updateSyncStatus('error');}
+}
+
 load();
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 renderList();
+initCSVSync();
 </script>
 </body>
 </html>
