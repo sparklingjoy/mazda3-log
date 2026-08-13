@@ -208,6 +208,22 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
       <button class="action-btn full" id="sync-btn" onclick="handleSyncClick()">🔗 CSVファイルと連携</button>
     </div>
     <div class="empty-sub" id="sync-status" style="margin-top:6px;text-align:center"></div>
+
+    <div class="section-label">GitHubと同期（全端末で共有）</div>
+    <div class="form-card" style="margin-bottom:8px">
+      <div class="form-row">
+        <label>トークン</label>
+        <input type="password" id="gh-token" placeholder="github_pat_..." autocomplete="off" onchange="saveGHTokenFromInput()">
+      </div>
+    </div>
+    <div class="empty-sub" style="margin-bottom:10px">対象リポジトリ限定・Contents権限のみのFine-grained PATを推奨</div>
+    <div class="action-grid">
+      <button class="action-btn full" id="gh-sync-btn" onclick="handleGitHubSyncClick()">☁️ GitHubと同期</button>
+    </div>
+    <div class="empty-sub" id="gh-sync-status" style="margin-top:6px;text-align:center"></div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="action-btn" style="padding:6px 12px;font-size:11px" onclick="disconnectGH()">連携を解除（トークン削除）</button>
+    </div>
   </div>
 
   <!-- 追加フォーム -->
@@ -545,10 +561,126 @@ async function initCSVSync(){
   }catch(e){console.error(e);updateSyncStatus('error');}
 }
 
+/* --- GitHubと自動同期（Contents API） --- */
+const GH_OWNER='sparklingjoy',GH_REPO='mazda3-log',GH_BRANCH='data',GH_PATH='records.json';
+const GH_TOKEN_KEY='mazda3_gh_token';
+let ghToken=null,ghSha=null;
+
+function utf8ToBase64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin);
+}
+function base64ToUtf8(b64){
+  const bin=atob(b64.replace(/\n/g,''));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function loadGHToken(){
+  try{ghToken=localStorage.getItem(GH_TOKEN_KEY)||null;}catch(e){ghToken=null;}
+  document.getElementById('gh-token').value=ghToken||'';
+}
+function saveGHTokenFromInput(){
+  const v=document.getElementById('gh-token').value.trim();
+  ghToken=v||null;
+  try{if(ghToken)localStorage.setItem(GH_TOKEN_KEY,ghToken);else localStorage.removeItem(GH_TOKEN_KEY);}catch(e){}
+}
+function disconnectGH(){
+  if(!confirm('GitHub連携を解除しますか？（トークンをこの端末から削除します）'))return;
+  ghToken=null;ghSha=null;
+  try{localStorage.removeItem(GH_TOKEN_KEY);}catch(e){}
+  document.getElementById('gh-token').value='';
+  updateGHStatus('disconnected');
+}
+
+async function ghFetchFile(){
+  const url=`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}?ref=${GH_BRANCH}`;
+  const res=await fetch(url,{headers:{'Authorization':'Bearer '+ghToken,'Accept':'application/vnd.github+json'}});
+  if(res.status===404){ghSha=null;return[];}
+  if(!res.ok)throw new Error('GET '+res.status);
+  const data=await res.json();
+  ghSha=data.sha;
+  try{return JSON.parse(base64ToUtf8(data.content))||[];}catch(e){return[];}
+}
+async function ghPutFile(newRecords){
+  const url=`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+  const body={message:'update records ('+new Date().toISOString()+')',content:utf8ToBase64(JSON.stringify(newRecords,null,2)),branch:GH_BRANCH};
+  if(ghSha)body.sha=ghSha;
+  const res=await fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+ghToken,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok)throw new Error('PUT '+res.status);
+  const data=await res.json();
+  ghSha=data.content.sha;
+}
+
+async function syncGitHub(){
+  if(!ghToken){updateGHStatus('no-token');return null;}
+  try{
+    const fileRecords=await ghFetchFile();
+
+    const mergedIds=new Set(fileRecords.map(r=>r.ts));
+    const mergedSigs=new Set(fileRecords.map(recordSig));
+    const localIds=new Set(records.map(r=>r.ts));
+    const localSigs=new Set(records.map(recordSig));
+    const fileFromGH=fileRecords.filter(r=>!localIds.has(r.ts)&&!localSigs.has(recordSig(r))).length;
+
+    const merged=fileRecords.slice();
+    let localAdded=0;
+    records.forEach(r=>{
+      if(!mergedIds.has(r.ts)&&!mergedSigs.has(recordSig(r))){
+        merged.push(r);mergedIds.add(r.ts);mergedSigs.add(recordSig(r));localAdded++;
+      }
+    });
+
+    records=merged;
+    save();
+
+    if(localAdded>0)await ghPutFile(records);
+    return{localAdded,fileFromGH};
+  }catch(e){
+    console.error(e);updateGHStatus('error',null,e.message);return null;
+  }
+}
+
+async function handleGitHubSyncClick(){
+  saveGHTokenFromInput();
+  if(!ghToken){alert('トークンを入力してください');return;}
+  updateGHStatus('syncing');
+  const result=await syncGitHub();
+  renderList();
+  updateGHStatus(result?'synced':null,result);
+}
+
+function updateGHStatus(state,result,errMsg){
+  const status=document.getElementById('gh-sync-status');
+  if(!status)return;
+  if(state==='no-token'){status.textContent='';return;}
+  if(state==='syncing'){status.textContent='同期中…';return;}
+  if(state==='disconnected'){status.textContent='連携を解除しました';return;}
+  if(state==='error'){status.textContent='⚠ 同期エラー: '+(errMsg||'');return;}
+  if(state==='synced'){
+    const added=result&&(result.localAdded||result.fileFromGH);
+    status.textContent=added?`✓ 同期しました（GitHubへ追加 ${result.localAdded}件 / 取込 ${result.fileFromGH}件）`:'✓ 同期済み';
+    return;
+  }
+  status.textContent='';
+}
+
+async function initGitHubSync(){
+  loadGHToken();
+  if(!ghToken)return;
+  updateGHStatus('syncing');
+  const result=await syncGitHub();
+  renderList();
+  updateGHStatus(result?'synced':null,result);
+}
+
 load();
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 renderList();
 initCSVSync();
+initGitHubSync();
 </script>
 </body>
 </html>
