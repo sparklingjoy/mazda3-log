@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>整備記録アプリ 運用フロー</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    body { margin: 0; font-family: "Yu Gothic", "Meiryo", sans-serif; }
+    #network { width: 100vw; height: 100vh; background:#fafafa; }
+    #legend {
+      position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.92);
+      border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #legend div { margin: 4px 0; }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+  </style>
+</head>
+<body>
+<div id="network"></div>
+<div id="legend">
+  <div><span class="dot" style="background:#5B9BD5"></span>デバイス</div>
+  <div><span class="dot" style="background:#70AD47"></span>ファイル・データ</div>
+  <div><span class="dot" style="background:#ED7D31"></span>GitHubサービス</div>
+  <div><span class="dot" style="background:#9966CC"></span>アプリ本体</div>
+  <div><span class="dot" style="background:#E15759"></span>制約</div>
+</div>
+<script>
+  const nodes = new vis.DataSet([
+    { id: 1, label: "PC\n(作業機)", color: "#5B9BD5", shape: "box", font:{color:"#fff"} },
+    { id: 2, label: "index.html\n(mainブランチ)", color: "#70AD47", shape: "box", font:{color:"#fff"} },
+    { id: 3, label: "GitHub\nリポジトリ (Public)", color: "#ED7D31", shape: "box", font:{color:"#fff"} },
+    { id: 4, label: "GitHub Pages\n(Web公開版)", color: "#ED7D31", shape: "box", font:{color:"#fff"} },
+    { id: 5, label: "iPhone / iPad\n(Safari)", color: "#5B9BD5", shape: "box", font:{color:"#fff"} },
+    { id: 6, label: "整備記録アプリ\n(ブラウザ上で実行)", color: "#9966CC", shape: "box", font:{color:"#fff"} },
+    { id: 7, label: "localStorage\n(端末内・自動保存)", color: "#70AD47", shape: "box", font:{color:"#fff"} },
+    { id: 8, label: "CSVファイル\n(端末のローカルストレージ)", color: "#70AD47", shape: "box", font:{color:"#fff"} },
+    { id: 9, label: "Safariの制約\n(file://不可 /\nFile System Access API非対応)", color: "#E15759", shape: "box", font:{color:"#fff"} },
+    { id: 10, label: "GitHub API\n(Contents API)", color: "#ED7D31", shape: "box", font:{color:"#fff"} },
+    { id: 11, label: "records.json\n(dataブランチ・全端末共有)", color: "#70AD47", shape: "box", font:{color:"#fff"} },
+    { id: 12, label: "Fine-grained PAT\n(端末のlocalStorageに保存)", color: "#70AD47", shape: "box", font:{color:"#fff"} },
+    { id: 13, label: "Publicリポジトリの制約\n(読み取りは誰でも可能)", color: "#E15759", shape: "box", font:{color:"#fff"} }
+  ]);
+
+  const edges = new vis.DataSet([
+    { from: 1, to: 2, label: "編集する" },
+    { from: 1, to: 3, label: "git push (main)" },
+    { from: 3, to: 4, label: "自動デプロイ" },
+    { from: 1, to: 6, label: "ローカル実行(file://)" },
+    { from: 4, to: 6, label: "ブラウザで実行" },
+    { from: 5, to: 9, label: "開けない", color:{color:"#E15759"} },
+    { from: 9, to: 4, label: "回避策", color:{color:"#E15759"}, dashes:true },
+    { from: 5, to: 4, label: "Webでアクセス" },
+    { from: 6, to: 7, label: "自動保存" },
+    { from: 6, to: 8, label: "読み込み/書き出し\n(CSV同期・iOS非対応)" },
+    { from: 6, to: 12, label: "トークンを保存" },
+    { from: 6, to: 10, label: "トークンで読み書き\n(Contents API)" },
+    { from: 10, to: 11, label: "GET/PUT" },
+    { from: 11, to: 6, label: "同期時にマージして反映" },
+    { from: 3, to: 13, label: "リポジトリ全体が対象", color:{color:"#E15759"} },
+    { from: 13, to: 11, label: "records.jsonも\n認証なしで閲覧可", color:{color:"#E15759"}, dashes:true }
+  ]);
+
+  const container = document.getElementById("network");
+  new vis.Network(container, { nodes, edges }, {
+    nodes: { margin: 10, widthConstraint: { maximum: 170 } },
+    edges: {
+      arrows: "to",
+      font: { align: "horizontal", color: "#333", background: "#ffffff", size: 14, multi: false },
+      smooth: false
+    },
+    layout: {
+      hierarchical: {
+        direction: "LR",
+        sortMethod: "directed",
+        levelSeparation: 320,
+        nodeSpacing: 190,
+        treeSpacing: 220
+      }
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: true, zoomView: true }
+  });
+</script>
+</body>
+</html>
