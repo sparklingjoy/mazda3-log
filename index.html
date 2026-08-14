@@ -533,19 +533,10 @@ function updateGHStatus(state,result,errMsg){
   status.textContent='';
 }
 
-async function initGitHubSync(){
-  loadGHToken();
-  if(!ghToken)return;
-  updateGHStatus('syncing');
-  const result=await syncGitHub();
-  renderList();
-  updateGHStatus(result?'synced':null,result);
-}
-
 load();
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 renderList();
-initGitHubSync();
+loadGHToken();
 </script>
 </body>
 </html>
