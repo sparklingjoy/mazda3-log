@@ -191,33 +191,39 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
       <button class="chip" onclick="setFilter('other',this)">その他</button>
     </div>
     <div id="record-list"></div>
-    <div class="section-label">書き出し</div>
-    <div class="action-grid">
-      <button class="action-btn" onclick="exportCSV()">📥 CSV</button>
-      <button class="action-btn" onclick="exportTxt()">📄 テキスト</button>
-    </div>
-    <div class="section-label">バックアップから復元</div>
-    <div class="action-grid">
-      <div class="action-btn accent full" style="position:relative;overflow:hidden;padding:0">
-        <span style="display:block;padding:13px;pointer-events:none">📂 CSVを読み込む</span>
-        <input type="file" accept=".csv,text/csv,text/plain" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="onCSVSelected(event)">
-      </div>
-    </div>
     <div class="section-label">GitHubと同期（全端末で共有）</div>
-    <div class="form-card" style="margin-bottom:8px">
-      <div class="form-row">
-        <label>トークン</label>
-        <input type="password" id="gh-token" placeholder="github_pat_..." autocomplete="off" onchange="saveGHTokenFromInput()">
-      </div>
-    </div>
-    <div class="empty-sub" style="margin-bottom:10px">対象リポジトリ限定・Contents権限のみのFine-grained PATを推奨</div>
     <div class="action-grid">
       <button class="action-btn full" id="gh-sync-btn" onclick="handleGitHubSyncClick()">☁️ GitHubと同期</button>
     </div>
     <div class="empty-sub" id="gh-sync-status" style="margin-top:6px;text-align:center"></div>
-    <div style="text-align:center;margin-top:8px">
-      <button class="action-btn" style="padding:6px 12px;font-size:11px" onclick="disconnectGH()">連携を解除（トークン削除）</button>
+
+    <div class="section-label">書き出し</div>
+    <div class="action-grid">
+      <button class="action-btn full" onclick="exportCSV()">📥 CSV</button>
     </div>
+
+    <details style="margin-top:24px">
+      <summary style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);cursor:pointer;list-style:none;text-align:center;padding:8px">⚙ 詳細設定</summary>
+      <div style="margin-top:6px">
+        <div class="section-label" style="margin-top:0">バックアップから復元</div>
+        <div class="action-grid">
+          <div class="action-btn accent full" style="position:relative;overflow:hidden;padding:0">
+            <span style="display:block;padding:13px;pointer-events:none">📂 CSVを読み込む</span>
+            <input type="file" accept=".csv,text/csv,text/plain" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="onCSVSelected(event)">
+          </div>
+        </div>
+        <div class="section-label">GitHubトークン</div>
+        <div class="form-card" style="margin-bottom:8px">
+          <div class="form-row">
+            <label>トークン</label>
+            <input type="password" id="gh-token" placeholder="github_pat_..." autocomplete="off" onchange="saveGHTokenFromInput()">
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="action-btn" style="padding:6px 12px;font-size:11px" onclick="disconnectGH()">連携を解除（トークン削除）</button>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- 追加フォーム -->
@@ -371,10 +377,6 @@ function recordsToCSV(list){
 }
 function exportCSV(){
   dl(recordsToCSV(records),'整備記録.csv','text/csv;charset=utf-8');
-}
-function exportTxt(){
-  const txt=records.map(r=>`[${TAG_LABEL[r.type]}] ${r.date||'日付不明'} / ${r.km?r.km.toLocaleString()+' km':'距離不明'}\n${r.title||''}${r.note?'\n'+r.note:''}${r.cost?'\n費用: ¥'+Number(r.cost).toLocaleString():''}`).join('\n\n---\n\n');
-  dl(txt,'整備記録.txt','text/plain;charset=utf-8');
 }
 function dl(c,f,t){
   const blob=new Blob([c],{type:t});
